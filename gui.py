@@ -407,7 +407,13 @@ class MediaCopyApp:
     
         if os.path.exists(dest):
             if is_file_already_copied(src, dest):
-                messagebox.showinfo("Информация", f"Файл уже скопирован:\n{dest}")
+                if copy_clip:
+                    self.root.clipboard_clear()
+                    self.root.clipboard_append(dest)
+                    self.root.update()
+                    messagebox.showinfo("Информация", f"Файл уже скопирован.\nПуть скопирован в буфер:\n{dest}")
+                else:
+                    messagebox.showinfo("Информация", f"Файл уже скопирован:\n{dest}")
                 return
             if not messagebox.askyesno("Перезапись", f"Перезаписать?\n{dest}"):
                 return
