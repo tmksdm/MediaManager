@@ -61,13 +61,13 @@ TYPE_STYLES = {
 }
 
 BUTTON_CONFIGS = {
-    "В Панораму": {"bootstyle": "info-outline", "icon": "📁"},
-    "В Эфир": {"bootstyle": "danger", "icon": "📡"},
-    "Кодер Сайт": {"bootstyle": "primary-outline", "icon": "🌐"},
-    "Хранение": {"bootstyle": "warning", "icon": "💾"},
-    "В Эфир 25": {"bootstyle": "danger", "icon": "📡"},
-    "Кодер 25": {"bootstyle": "primary-outline", "icon": "🌐"},
-    "В Архив": {"bootstyle": "success", "icon": "📦"},
+    "В Панораму": {"bootstyle": "info-outline"},
+    "В Эфир": {"bootstyle": "danger"},
+    "Кодер Сайт": {"bootstyle": "primary-outline"},
+    "Хранение": {"bootstyle": "warning"},
+    "В Эфир 25": {"bootstyle": "danger"},
+    "Кодер 25": {"bootstyle": "primary-outline"},
+    "В Архив": {"bootstyle": "success"},
 }
 
 # -------------------------

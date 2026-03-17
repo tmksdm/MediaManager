@@ -27,7 +27,6 @@ from file_utils import (
     dest_archive_stories, is_file_already_copied, find_files_by_date,
     normalize_path,
 )
-from email_utils import send_outlook_email
 
 
 class MediaCopyApp:
@@ -36,7 +35,7 @@ class MediaCopyApp:
             title="Медиа-менеджер | Создание и копирование",
             themename="litera",
             size=(1250, 850),
-            minsize=(1000, 600),
+            minsize=(1250, 600),
         )
         self.root.place_window_center()
 
@@ -313,21 +312,29 @@ class MediaCopyApp:
 
         # Имя файла
         ttk.Label(
-            row, text=clean_name, font=("Segoe UI", 9), width=55, anchor=W
-        ).pack(side=LEFT, padx=(0, 8))
+            row, text=clean_name, font=("Segoe UI", 9), anchor=W
+        ).pack(side=LEFT, fill=X, expand=True, padx=(0, 8))
 
         if not mm or not dd:
             return
 
-        # Галочка «уже скопировано»
+        # Блок кнопок справа
+        btn_frame = ttk.Frame(row)
+        btn_frame.pack(side=RIGHT)
+
+        # Внутри btn_frame: галочка + кнопки
+        inner = ttk.Frame(btn_frame)
+        inner.pack(side=RIGHT)
+
+        # Галочка
         primary_dest = self._get_primary_dest(fpath, fname, file_type, year, mm, dd)
         if primary_dest and os.path.exists(primary_dest) and is_file_already_copied(fpath, primary_dest):
             ttk.Label(
-                row, text="✓", foreground="#43A047", font=("Segoe UI", 13, "bold")
-            ).pack(side=LEFT, padx=(0, 6))
+                btn_frame, text="✓", foreground="#43A047", font=("Segoe UI", 12, "bold")
+            ).pack(side=LEFT, padx=(0, 4))
 
         # Кнопки
-        self._render_action_buttons(row, fpath, fname, file_type, year, mm, dd)
+        self._render_action_buttons(btn_frame, fpath, fname, file_type, year, mm, dd)
 
     def _get_primary_dest(self, fpath, fname, file_type, year, mm, dd):
         if file_type in ("ПАНОРАМА", "ДАЙДЖЕСТ"):
@@ -338,101 +345,94 @@ class MediaCopyApp:
             return os.path.join(dest_archive_stories(year, mm), fname)
         return None
 
-    def _render_action_buttons(self, row, fpath, fname, file_type, year, mm, dd):
-        btn_frame = ttk.Frame(row)
-        btn_frame.pack(side=RIGHT)
-    
+    def _render_action_buttons(self, parent, fpath, fname, file_type, year, mm, dd):
         if file_type in ("ПАНОРАМА", "ДАЙДЖЕСТ"):
             dst = dest_site2(year, mm, dd)
             if os.path.isdir(dst):
-                self._action_btn(btn_frame, "В Панораму",
+                self._action_btn(parent, "В Панораму",
                     lambda s=fpath, d=dst, f=fname: self._copy(s, os.path.join(d, f)))
             else:
-                ttk.Label(btn_frame, text="Нет пути", foreground="red",
+                ttk.Label(parent, text="Нет пути", foreground="red",
                     font=("Segoe UI", 8)).pack(side=LEFT, padx=4)
-    
+
             if os.path.isdir(EFIR_BASE):
-                self._action_btn(btn_frame, "В Эфир",
+                self._action_btn(parent, "В Эфир",
                     lambda s=fpath, ft=file_type: self._show_efir_selection(s, ft))
-    
+
             if os.path.isdir(CODER_SITE):
-                self._action_btn(btn_frame, "Кодер Сайт",
+                self._action_btn(parent, "Кодер Сайт",
                     lambda s=fpath, f=fname: self._copy(s, os.path.join(CODER_SITE, f)))
-    
+
         elif file_type == "НОВОСТИ":
             dst_s = dest_news_storage(year, mm)
             if os.path.isdir(dst_s):
-                self._action_btn(btn_frame, "Хранение",
+                self._action_btn(parent, "Хранение",
                     lambda s=fpath, d=dst_s, f=fname:
                     self._copy(s, os.path.join(d, f), copy_clip=True))
             if os.path.isdir(NEWS_EFIR25):
-                self._action_btn(btn_frame, "В Эфир 25",
+                self._action_btn(parent, "В Эфир 25",
                     lambda s=fpath, f=fname:
                     self._copy(s, os.path.join(NEWS_EFIR25, f), copy_clip=True))
             if os.path.isdir(CODER_25):
-                self._action_btn(btn_frame, "Кодер 25",
+                self._action_btn(parent, "Кодер 25",
                     lambda s=fpath, f=fname:
                     self._copy(s, os.path.join(CODER_25, f), copy_clip=True))
-    
+
         elif file_type == "АРХИВ":
             dst_a = dest_archive_stories(year, mm)
             if os.path.isdir(dst_a):
-                self._action_btn(btn_frame, "В Архив",
+                self._action_btn(parent, "В Архив",
                     lambda s=fpath, d=dst_a, f=fname:
                     self._copy(s, os.path.join(d, f)))
 
     def _action_btn(self, parent, text: str, command):
-        cfg = BUTTON_CONFIGS.get(text, {"bootstyle": "secondary-outline", "icon": ""})
+        cfg = BUTTON_CONFIGS.get(text, {"bootstyle": "secondary-outline"})
         ttk.Button(
-            parent, text=f"{cfg['icon']} {text}", command=command,
-            bootstyle=cfg["bootstyle"], width=14,
-        ).pack(side=LEFT, padx=3)
+            parent, text=text, command=command,
+            bootstyle=cfg["bootstyle"], width=11,
+        ).pack(side=LEFT, padx=2)
 
     # =========================================================
     # КОПИРОВАНИЕ
     # =========================================================
-    def _copy(self, src, dest, email=None, copy_clip=False):
+    def _copy(self, src, dest, copy_clip=False):
         if not os.path.exists(src):
             messagebox.showerror("Ошибка", f"Файл не найден:\n{src}")
             return
-
+    
         dest_dir = os.path.dirname(dest)
         if not os.path.isdir(dest_dir):
             messagebox.showerror("Ошибка", f"Папка не найдена:\n{dest_dir}")
             return
-
+    
         if os.path.exists(dest):
             if is_file_already_copied(src, dest):
                 messagebox.showinfo("Информация", f"Файл уже скопирован:\n{dest}")
                 return
             if not messagebox.askyesno("Перезапись", f"Перезаписать?\n{dest}"):
                 return
-
-        # Окно прогресса
+    
         progress_win = ttk.Toplevel(self.root)
         progress_win.title("Копирование")
         progress_win.geometry("420x120")
         progress_win.transient(self.root)
         progress_win.grab_set()
         progress_win.place_window_center()
-
+    
         ttk.Label(
             progress_win, text=os.path.basename(src), font=("Segoe UI", 10, "bold"),
         ).pack(pady=(15, 5))
-
+    
         bar = ttk.Progressbar(progress_win, mode="indeterminate", bootstyle="info-striped")
         bar.pack(fill=X, padx=30, pady=5)
         bar.start(12)
-
+    
         ttk.Label(progress_win, text="Копирование…", font=("Segoe UI", 9)).pack()
-
+    
         def _worker():
             try:
                 shutil.copy2(src, dest)
-                email_ok = False
-                if email:
-                    email_ok = send_outlook_email(dest, email)
-
+    
                 def _done():
                     progress_win.destroy()
                     if copy_clip:
@@ -440,19 +440,18 @@ class MediaCopyApp:
                         self.root.clipboard_append(dest)
                         self.root.update()
                         messagebox.showinfo("Готово", f"Путь в буфере:\n{dest}")
-                    elif email_ok:
-                        messagebox.showinfo("Готово", f"Скопировано + письмо:\n{dest}")
                     else:
                         messagebox.showinfo("Готово", f"Скопировано:\n{dest}")
                     self.refresh_file_list()
-
+    
                 self.root.after(0, _done)
-
+    
             except Exception as e:
                 self.root.after(0, lambda: progress_win.destroy())
                 self.root.after(0, lambda: messagebox.showerror("Ошибка", str(e)))
-
+    
         threading.Thread(target=_worker, daemon=True).start()
+
 
     # =========================================================
     # ВЫБОР ВРЕМЕНИ ЭФИРА
